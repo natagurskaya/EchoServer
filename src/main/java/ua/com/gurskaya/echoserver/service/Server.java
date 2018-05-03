@@ -5,36 +5,47 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Server {
-    private static final int PORT = 8080;
+    private int port;
 
-    public static void main(String[] args) throws IOException {
-        ServerSocket serverSocket = null;
+    public Server(int port) {
+        this.port = port;
+    }
 
-        try {
-            serverSocket = new ServerSocket(PORT);
-        } catch (IOException e) {
-            throw new RuntimeException("Can't open server socket", e);
-        }
-        Socket socket = null;
-        try {
-            socket = serverSocket.accept();
-        } catch (IOException e) {
-            throw new RuntimeException("Couldn't connect to client", e);
-        }
+    public void start() {
 
         while (true) {
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            PrintWriter printWriter = new PrintWriter(socket.getOutputStream(), true);
-
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                System.out.println(line);
-                printWriter.println(line);
+            ServerSocket serverSocket = null;
+            Socket socket = null;
+            BufferedReader bufferedReader = null;
+            BufferedWriter bufferedWriter = null;
+            try {
+                serverSocket = new ServerSocket(port);
+                socket = serverSocket.accept();
+                bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+                try {
+                    String line;
+                    while ((line = bufferedReader.readLine()) != null) {
+                        System.out.println(line);
+                        bufferedWriter.write(line);
+                        bufferedWriter.newLine();
+                        bufferedWriter.flush();
+                    }
+                } catch (IOException e) {
+                    System.out.println("Waiting for new connection...");
+                }
+            } catch (IOException e) {
+                throw new RuntimeException("Couldn't connect to client", e);
+            } finally {
+                try {
+                    serverSocket.close();
+                    bufferedReader.close();
+                    bufferedWriter.close();
+                    socket.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
-            bufferedReader.close();
-            printWriter.close();
-            socket.close();
-            serverSocket.close();
         }
     }
 }
